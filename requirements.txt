@@ -1,0 +1,16 @@
+pandas>=2.1.0
+numpy>=1.26.0,<2.4
+matplotlib
+seaborn
+kmodes
+scipy
+pyyaml
+geopandas
+shapely
+libpysal
+esda
+openpyxl
+scikit-learn
+pgmpy>=1.0.0
+stepmix
+pyclustering

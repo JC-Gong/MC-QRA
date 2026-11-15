@@ -1,0 +1,227 @@
+project:
+  name: "MC-RA"
+  description: "Maritime Cybersecurity Risk Analysis"
+
+data:
+  input_path: "data/output.csv"
+  output_dir: "output"
+  # 纳入分析的时间范围 (含端点); max_year 留空表示不限制
+  min_year: 2010
+  max_year: 2025
+  export:
+    n_splits: 5
+    random_state: 42
+    year_bins: [2010, 2015, 2020, 2023, 2026]
+    year_labels: ['2010-2014', '2015-2019', '2020-2022', '2023-2025']
+    columns:
+      # - 'Intent'
+      - 'Victim countries'
+      - 'Attack countries'
+      - 'Target'
+      - 'Year'
+      # - 'Origin'
+      - 'Asset exploited'
+      - 'Cyber threats'
+      - 'Risk bin'
+      # - "Consequence severity"
+      # - "Consequence type"
+  geographic_merge:
+    # 主权归并
+    "Hong Kong": "China"
+    "Macau": "China"
+    "Taiwan": "China"
+    "Russia": "Russian Federation"
+    "Iran": "Iran"
+    "South Korea": "Republic Of Korea"
+    "Korea": "Republic Of Korea"
+    "Netherlands": "Netherlands"
+    "Turkey": "Turkiye"
+    "Syria": "Syrian Arab Republic"
+    "United Kingdom": "United Kingdom"
+    "Usa": "United States"
+    "United States": "United States"
+    "Vietnam": "Viet Nam"
+    "Tanzania": "United Republic Of Tanzania"
+    "Venezuela": "Venezuela"
+  categorical_columns:
+    # - "Year"
+    - "Attack countries"
+    - "Victim countries"
+    - "Target"
+    - "Asset exploited"
+    - "Cyber threats"
+    - "Consequence severity"
+    - "Consequence type"
+    - "Intent"
+    - "Origin"
+
+clustering:
+  method: "lca" # 可选: kmodes, agglomerative, lca, rock
+  n_clusters: 5
+  init: "Cao" # 可选: Huang, Cao, random
+  n_init: 10
+  max_iter: 1000
+  random_state: 0
+  # Agglomerative 特有配置
+  linkage: "complete" # complete, average, single
+  # ROCK 特有配置
+  rock_radius: 5
+
+risk:
+  severity_mapping:
+
+    "Major": 1
+    "Moderate": 0.67
+    "Minor": 0.33
+
+    # "Critical": 1
+    # "Major": 0.8
+    # "Moderate": 0.6
+    # "Minor": 0.4
+    # "Negligible": 0.2
+
+  # 3-level (For BN Prediction): [0, 0.33, 0.66, 1.0] | ['Low', 'Medium', 'High']
+  # 5-level (For Detailed Analysis): [0, 0.25, 0.5, 0.75, 0.95, 1.0] | ['Very low', 'Low', 'Medium', 'High', 'Very high']
+  # binning_method: "rank" (排名分箱) or "value" (真实值分箱)
+  binning_method: "rank"
+  risk_bins: [0, 0.33, 0.66, 1.0]
+  risk_labels: ['Low', 'Medium', 'High']
+  # 风险等级划分组合 (均分 vs 多种不均分, 3-level vs 5-level)
+  # name 用于生成文件夹与文件名；bins 为边界，labels 为等级标签
+  # 其中 *-unequal-* 为针对阈值设定的敏感性变体，刻意拉开截断点间距以凸显敏感性
+
+  binning_combinations:
+    # 3级：等宽，最安全、最中性的基准
+    - name: "3-level-equal"
+      bins: [0, 0.333, 0.667, 1.0]
+      labels: ['Low', 'Medium', 'High']
+
+    # 3级：低分细、高分宽，适合分数整体偏高、高分段样本多的数据
+    - name: "3-level-high-wide"
+      bins: [0, 0.2, 0.5, 1.0]
+      labels: ['Low', 'Medium', 'High']
+
+    # 3级：低分宽、高分细，适合分数整体偏低、高分段需要更细区分的数据
+    - name: "3-level-low-wide"
+      bins: [0, 0.4, 0.7, 1.0]
+      labels: ['Low', 'Medium', 'High']
+
+    # 3级：温和对称不等宽，中间类略宽
+    - name: "3-level-symmetric"
+      bins: [0, 0.25, 0.55, 1.0]
+      labels: ['Low', 'Medium', 'High']
+
+    # 5级：等宽，基准
+    - name: "5-level-equal"
+      bins: [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+      labels: ['Very low', 'Low', 'Medium', 'High', 'Very high']
+
+    # 5级：对称温和不等宽，两端稍窄，中间稍宽
+    - name: "5-level-symmetric"
+      bins: [0, 0.15, 0.35, 0.6, 0.85, 1.0]
+      labels: ['Very low', 'Low', 'Medium', 'High', 'Very high']
+
+    # 5级：高端宽 (high-wide)，低分段分箱更细
+    - name: "5-level-high-wide"
+      bins: [0, 0.1, 0.25, 0.45, 0.7, 1.0]
+      labels: ['Very low', 'Low', 'Medium', 'High', 'Very high']
+
+    # 5级：低端宽 (low-wide)，高分段分箱更细
+    - name: "5-level-low-wide"
+      bins: [0, 0.3, 0.55, 0.75, 0.9, 1.0]
+      labels: ['Very low', 'Low', 'Medium', 'High', 'Very high']
+  # 仅对选中的组合生成 BN 测试文件 (train/test folds)
+  selected_combinations: ['3-level-equal', 
+                          '3-level-high-wide', 
+                          '3-level-low-wide', 
+                          '3-level-symmetric', 
+                          '5-level-equal', 
+                          '5-level-symmetric', 
+                          '5-level-low-wide', 
+                          '5-level-high-wide']
+
+netica:
+  # Netica 安装路径 (C-API 二进制与 Python 包目录); 不同机器按实际安装修改
+  bin_dir: "D:\\Netica\\NeticaPy21-11-09\\NeticaPy21-11-09\\bin"
+  pkg_dir: "D:\\Netica\\NeticaPy21-11-09\\NeticaPy21-11-09"
+  # 临时工作目录 (Netica C-API 无法处理含中文的路径, 需 ASCII 临时目录)
+  tmp_dir: "C:\\Users\\naclc\\AppData\\Local\\Temp\\opencode\\bn"
+  # 目标变量节点名 (列名/节点名均为规整后的下划线命名, 见主流程导出时的规整)
+  target: "Risk_Level"
+  # 目标变量在 (已规整) CSV 中的列名
+  target_column: "Risk_Level"
+  # 交叉验证指标输出文件名
+  result_name: "result_netica_cv.txt"
+  # 交叉验证折数 (与数据划分的 n_splits 保持一致)
+  n_folds: 5
+  # 注: 原生计数学习 (revise_CPTs_by_case_file) 为纯极大似然, 不做 Laplace 平滑,
+  # 故 alpha 当前未生效; 如需平滑可改用经验表 (experience), 留作扩展位。
+  alpha: 1.0
+  # 结构学习方法: "tan" (默认) = Netica 原生 TAN (Tree-Augmented Naive Bayes),
+  # 由 all_data 数据学一次结构; "naive" = 普通朴素贝叶斯 (所有特征直接连到目标, 特征间无边);
+  # "fixed" = 使用下方 scenarios 写死的领域 DAG。
+  structure_method: tan
+  # 交叉验证对比时同时跑多种结构 (结果文件名带 method 后缀, 汇总表含 method 列),
+  # 仅填一种则退化为原单结构行为。
+  structure_methods: ["tan", "naive"]
+
+  # 仅当 structure_method == "fixed" 时使用的固定领域 DAG (每个节点的父节点列表)。
+  # 键名为规整后的节点名 (下划线); 节点状态由数据列自动确定。
+  # 命名统一用 with/without 前缀, 与下方 export_scenarios 的目录名语义对应。
+  scenarios:
+    without_intent_origin:
+      Risk_Level: []
+      Victim_countries: ["Risk_Level"]
+      Target: ["Risk_Level", "Victim_countries"]
+      Attack_countries: ["Risk_Level", "Victim_countries"]
+      Year: ["Risk_Level", "Victim_countries"]
+      Asset_exploited: ["Risk_Level", "Target"]
+      Cyber_threats: ["Risk_Level", "Asset_exploited"]
+    with_intent_origin:
+      Risk_Level: []
+      Intent: ["Risk_Level"]
+      Victim_countries: ["Risk_Level", "Intent"]
+      Origin: ["Risk_Level", "Victim_countries"]
+      Target: ["Risk_Level", "Victim_countries"]
+      Attack_countries: ["Risk_Level", "Victim_countries"]
+      Year: ["Risk_Level", "Victim_countries"]
+      Asset_exploited: ["Risk_Level", "Target"]
+      Cyber_threats: ["Risk_Level", "Asset_exploited"]
+
+  # 数据导出场景: 决定每个场景在 base 导出列基础上额外包含哪些列, 并以此作为目录名。
+  # 引擎会按 fold CSV 实际含列自动匹配上面的 DAG 场景 (含 Intent/Origin -> with_*)。
+  # 改这里即可增删场景, 无需改 main.py。
+  export_scenarios:
+    - name: "without_intent_origin"
+      extra_columns: []
+    - name: "with_intent_origin"
+      extra_columns: ['Intent', 'Origin']
+
+visualization:
+  style:
+    font_family: "Times New Roman"
+    font_size: 16
+    font_weight: "bold"
+    color: "skyblue"
+    remove_spines: ["top", "right"]
+    remove_title: true
+  kde:
+    gridsize: 200
+    alpha: 0.6
+    cmap: "YlGnBu"
+  hotspot:
+    k_neighbors: 9
+    confidence_levels: [0.001, 0.05, 0.1]
+  # 制图要素 (高仿 ArcGIS 风格); 缺省见 src/visualization.py 的 _DEFAULT_CARTO
+  cartography:
+    projection: "EPSG:4326"       # 等距圆柱 (经纬度直绘, 即原投影); 需 Robinson 改 "ESRI:54030"
+    ocean_color: "#cfe3f2"
+    land_color: "#ece8dc"
+    land_edge: "#a9a99a"
+    graticule_step: 30
+    graticule_color: "#b9b9b9"
+    show_scale_bar: true
+    show_north_arrow: true
+    show_neatline: true
+    scale_bar_km: 2000
+    kde_classes: 9
