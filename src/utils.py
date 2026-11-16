@@ -6,13 +6,13 @@ import numpy as np
 import os
 
 def format_excel_thresholds(file_path, numeric_df, thresholds_mask, start_col=3):
-    """加粗 Excel 中超过阈值的单元格"""
+    """ Excel """
     wb = load_workbook(file_path)
     ws = wb.active
-    # 查找数据区域
+    
     for i, idx in enumerate(numeric_df.index, start=2):
         for j, col in enumerate(numeric_df.columns, start=start_col):
-            # 确保不处理汇总行
+            
             if idx in thresholds_mask.index:
                 if thresholds_mask.loc[idx, col]:
                     cell = ws.cell(row=i, column=j)
@@ -20,7 +20,7 @@ def format_excel_thresholds(file_path, numeric_df, thresholds_mask, start_col=3)
     wb.save(file_path)
 
 def calculate_mi_matrix(df, columns):
-    """计算分类变量间的互信息矩阵"""
+    """"""
     mi_matrix = pd.DataFrame(np.zeros((len(columns), len(columns))), index=columns, columns=columns)
     nmi_matrix = pd.DataFrame(np.zeros((len(columns), len(columns))), index=columns, columns=columns)
     for i in columns:

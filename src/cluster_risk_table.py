@@ -11,10 +11,10 @@ def load_config(config_path):
 
 
 def resolve_severity_mapping(risk_cfg):
-    """优先使用 severity_schemes，否则回退到单一 severity_mapping。"""
+    """ severity_schemes severity_mapping"""
     schemes = risk_cfg.get('severity_schemes')
     if schemes:
-        # 无显式 scheme 时取第一个
+        
         first = next(iter(schemes.values()))
         return first
     return risk_cfg.get('severity_mapping', {})
@@ -22,15 +22,15 @@ def resolve_severity_mapping(risk_cfg):
 
 def build_cluster_risk_table(df, severity_map, cluster_col='cluster',
                              severity_col='Consequence severity'):
-    """对聚类结果逐簇统计风险指标。
+    """
 
-    指标定义 (对齐论文口径):
-      Incidents      : 该簇事件数
-      Frequency      : Incidents / 总事件数
-      Mean severity  : 该簇 severity_score 均值
+     ():
+      Incidents      : 
+      Frequency      : Incidents / 
+      Mean severity  :  severity_score 
       Relative risk  : Frequency * Mean severity
       Risk share     : Relative risk / Sum(Relative risk)
-      Rank           : 按 Relative risk 降序排名 (1 = 最高)
+      Rank           :  Relative risk  (1 = )
     """
     df = df.copy()
     df['severity_score'] = df[severity_col].map(
@@ -52,20 +52,20 @@ def build_cluster_risk_table(df, severity_map, cluster_col='cluster',
             'Frequency': freq,
             'Mean severity': mean_sev,
             'Relative risk': rel_risk,
-            'Risk share': rel_risk,  # 占位，下面归一
+            'Risk share': rel_risk,  
         })
 
     table = pd.DataFrame(rows)
     table['Risk share'] = table['Relative risk'] / table['Relative risk'].sum()
 
-    # 排名 (Relative risk 降序, 1 为最高)
+    
     table = table.sort_values('cluster').reset_index(drop=True)
     table['Rank'] = table['Relative risk'].rank(ascending=False, method='min').astype(int)
 
-    # 重命名场景列
+    
     table.insert(0, 'Scenario', ['C' + str(i + 1) for i in range(len(table))])
 
-    # 总计行
+    
     total_row = {
         'Scenario': 'Total',
         'cluster': '',
@@ -78,7 +78,7 @@ def build_cluster_risk_table(df, severity_map, cluster_col='cluster',
     }
     table = pd.concat([table, pd.DataFrame([total_row])], ignore_index=True)
 
-    # 列顺序与保留小数
+    
     out_cols = ['Scenario', 'Incidents', 'Frequency', 'Mean severity',
                 'Relative risk', 'Risk share', 'Rank']
     out = table[out_cols].copy()
@@ -94,7 +94,7 @@ def main():
     config_path = os.path.join(base_dir, 'config', 'config.yaml')
     cfg = load_config(config_path)
 
-    # 优先读取已聚类并带 severity 的结果文件
+    
     input_candidates = [
         os.path.join(base_dir, cfg['data'].get('output_dir', 'output'), 'full_risk_data.csv'),
         os.path.join(base_dir, 'data', 'output.csv'),

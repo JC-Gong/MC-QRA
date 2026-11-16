@@ -1,11 +1,11 @@
-"""解析各方案的 result_netica_cv.txt, 汇总交叉验证指标。
+""" result_netica_cv.txt, 
 
-对每个 (group, scheme) 解析每折混淆矩阵, 计算:
+ (group, scheme) , :
   - accuracy
-  - macro_precision / macro_recall / macro_f1 (多类宏平均)
-跨折聚合为 mean ± std, 写入 bn_metrics_cv_summary.csv。
+  - macro_precision / macro_recall / macro_f1 ()
+ mean ± std,  bn_metrics_cv_summary.csv
 
-用法:
+:
     from src.bn_metrics import summarize
     summarize("output", dataset="MC-RA", out_csv="output/bn_metrics_cv_summary.csv")
 """
@@ -25,10 +25,10 @@ HEADER = [
 
 
 def _parse_confusions(text):
-    """从 result_netica_cv.txt 解析每折混淆矩阵 (list[list[int]]).
+    """ result_netica_cv.txt  (list[list[int]]).
 
-    不依赖表头宽度: 直接按每块中数字行推断矩阵阶数 n (取首个数字行的整数个数),
-    再收集恰好含 n 个整数的行作为矩阵行。
+    :  n (),
+     n 
     """
     blocks = re.split(r"\d+\.\s*Confusion:", text)
     mats = []
@@ -77,7 +77,7 @@ def _std(x):
 
 
 def _ci95(x):
-    """95% 置信区间 (均值), 小样本用 t 分布 (df=n-1)。返回 (lo, hi)。"""
+    """95%  (),  t  (df=n-1) (lo, hi)"""
     n = len(x)
     if n < 2:
         return 0.0, 0.0
@@ -88,7 +88,7 @@ def _ci95(x):
 
 
 def _cell(x):
-    """单格: mean±std [lo,hi] (lo,hi 为 95% 置信区间)。"""
+    """: mean±std [lo,hi] (lo,hi  95% )"""
     m, s = _mean(x), _std(x)
     lo, hi = _ci95(x)
     return f"{m:.3f}±{s:.3f} [{lo:.3f},{hi:.3f}]"
@@ -99,8 +99,8 @@ def summarize(output_dir, dataset="MC-RA",
               binning=None):
     rows = []
     for root, _dirs, files in os.walk(output_dir):
-        # 同时兼容单结构 (result_netica_cv.txt) 与多结构对比
-        # (result_netica_cv_{method}.txt, 如 tan / naive / fixed)。
+        
+        
         result_files = [f for f in files
                         if f.startswith("result_netica_cv")
                         and f.endswith(".txt")]
@@ -110,7 +110,7 @@ def summarize(output_dir, dataset="MC-RA",
         group = parts[-2]
         scheme = parts[-1]
         for rf in result_files:
-            # 解析结构方法: result_netica_cv.txt -> tan; result_netica_cv_naive.txt -> naive
+            
             if rf == "result_netica_cv.txt":
                 method = "tan"
             else:
